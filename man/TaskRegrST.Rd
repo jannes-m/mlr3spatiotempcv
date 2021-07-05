@@ -2,19 +2,25 @@
 % Please edit documentation in R/TaskRegrST.R
 \name{TaskRegrST}
 \alias{TaskRegrST}
-\title{SpatioTemporal Regression Task}
+\title{Create a Spatiotemporal Regression Task}
 \description{
-This task specializes \link{Task} and \link{TaskSupervised} for spatio-temporal
-regression problems. The target column is assumed to be a factor.
-The \code{task_type} is set to \code{"classif"} and \code{"spatiotemporal"}.
+This task specializes \link{Task} and \link{TaskSupervised} for spatiotemporal
+classification problems.
 
-During initialization, coordinates need to be passed.
-By default, coordinates are not used as features.
-This can be changed by setting \code{coords_as_features = TRUE}.
+A spatial example task is available via \code{tsk("ecuador")}, a spatiotemporal
+one via \code{tsk("cookfarm")}.
+
+The coordinate reference system passed during initialization must match the
+one which was used during data creation, otherwise offsets of multiple meters
+may occur. By default, coordinates are not used as features. This can be
+changed by setting \code{extra_args$coords_as_features = TRUE}.
 }
 \seealso{
 Other Task: 
-\code{\link{TaskClassifST}}
+\code{\link{TaskClassifST}},
+\code{\link{mlr_tasks_cookfarm}},
+\code{\link{mlr_tasks_diplodia}},
+\code{\link{mlr_tasks_ecuador}}
 }
 \concept{Task}
 \section{Super classes}{
@@ -23,11 +29,9 @@ Other Task:
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
 \describe{
-\item{\code{coordinate_names}}{\link{character}\cr
-The variables names of the coordinates in the data.}
-
-\item{\code{crs}}{\link{character}\cr
-The \code{proj4string} of the coordinate system.}
+\item{\code{extra_args}}{(named \code{list()})\cr
+Additional task arguments set during construction.
+Required for \code{\link[=convert_task]{convert_task()}}.}
 }
 \if{html}{\out{</div>}}
 }
@@ -43,6 +47,7 @@ The \code{proj4string} of the coordinate system.}
 \if{html}{
 \out{<details ><summary>Inherited methods</summary>}
 \itemize{
+\item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Task" data-id="add_strata">}\href{../../mlr3/html/Task.html#method-add_strata}{\code{mlr3::Task$add_strata()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Task" data-id="cbind">}\href{../../mlr3/html/Task.html#method-cbind}{\code{mlr3::Task$cbind()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Task" data-id="data">}\href{../../mlr3/html/Task.html#method-data}{\code{mlr3::Task$data()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Task" data-id="droplevels">}\href{../../mlr3/html/Task.html#method-droplevels}{\code{mlr3::Task$droplevels()}}\out{</span>}
@@ -51,19 +56,21 @@ The \code{proj4string} of the coordinate system.}
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Task" data-id="formula">}\href{../../mlr3/html/Task.html#method-formula}{\code{mlr3::Task$formula()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Task" data-id="head">}\href{../../mlr3/html/Task.html#method-head}{\code{mlr3::Task$head()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Task" data-id="help">}\href{../../mlr3/html/Task.html#method-help}{\code{mlr3::Task$help()}}\out{</span>}
+\item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Task" data-id="label">}\href{../../mlr3/html/Task.html#method-label}{\code{mlr3::Task$label()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Task" data-id="levels">}\href{../../mlr3/html/Task.html#method-levels}{\code{mlr3::Task$levels()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Task" data-id="missings">}\href{../../mlr3/html/Task.html#method-missings}{\code{mlr3::Task$missings()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Task" data-id="rbind">}\href{../../mlr3/html/Task.html#method-rbind}{\code{mlr3::Task$rbind()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Task" data-id="rename">}\href{../../mlr3/html/Task.html#method-rename}{\code{mlr3::Task$rename()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Task" data-id="select">}\href{../../mlr3/html/Task.html#method-select}{\code{mlr3::Task$select()}}\out{</span>}
-\item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Task" data-id="set_col_role">}\href{../../mlr3/html/Task.html#method-set_col_role}{\code{mlr3::Task$set_col_role()}}\out{</span>}
-\item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Task" data-id="set_row_role">}\href{../../mlr3/html/Task.html#method-set_row_role}{\code{mlr3::Task$set_row_role()}}\out{</span>}
+\item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Task" data-id="set_col_roles">}\href{../../mlr3/html/Task.html#method-set_col_roles}{\code{mlr3::Task$set_col_roles()}}\out{</span>}
+\item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Task" data-id="set_row_roles">}\href{../../mlr3/html/Task.html#method-set_row_roles}{\code{mlr3::Task$set_row_roles()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="TaskRegr" data-id="truth">}\href{../../mlr3/html/TaskRegr.html#method-truth}{\code{mlr3::TaskRegr$truth()}}\out{</span>}
 }
 \out{</details>}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-new"></a>}}
+\if{latex}{\out{\hypertarget{method-new}{}}}
 \subsection{Method \code{new()}}{
 Create a new spatiotemporal resampling Task
 \subsection{Usage}{
@@ -71,17 +78,14 @@ Create a new spatiotemporal resampling Task
   id,
   backend,
   target,
-  positive = NULL,
-  coords_as_features = FALSE,
-  crs = NA,
-  coordinate_names = NA
+  extra_args = list(coords_as_features = FALSE, crs = NA, coordinate_names = NA)
 )}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{id}}{\code{character(1)}\cr
+\item{\code{id}}{\verb{[character(1)]}\cr
 Identifier for the task.}
 
 \item{\code{backend}}{\link{DataBackend}\cr
@@ -89,30 +93,28 @@ Either a \link{DataBackend}, or any object which is convertible to a
 DataBackend with \code{as_data_backend()}. E.g., a \code{data.frame()} will be
 converted to a \link{DataBackendDataTable}.}
 
-\item{\code{target}}{\code{character(1)}\cr
+\item{\code{target}}{\verb{[character(1)]}\cr
 Name of the target column.}
 
-\item{\code{positive}}{\code{character(1)}\cr
-Only for binary classification: Name of the positive class. The levels
-of the target columns are reordered accordingly, so that the first
-element of \verb{$class_names} is the positive class, and the second element
-is the negative class.}
-
-\item{\code{coords_as_features}}{\code{logical(1)}\cr
+\item{\code{extra_args}}{\verb{[named list]}\cr
+Additional task arguments set during construction. Required for
+\code{\link[=convert_task]{convert_task()}}.
+\itemize{
+\item crs \verb{[character(1)]}\cr
+Coordinate reference system. Either a PROJ string or an
+\href{https://epsg.io/}{EPSG} code.
+\item coords_as_features \verb{[logical(1)]}\cr
 Whether the coordinates should also be used as features.
-Default is \code{FALSE}.}
-
-\item{\code{crs}}{\code{character(1)}\cr
-Coordinates reference system}
-
-\item{\code{coordinate_names}}{\code{character(2)}\cr
-The variables names of the coordinates in the data.}
+\item coordinate_names \verb{[character(2)]}\cr
+The variables names of the coordinates in the data.
+}}
 }
 \if{html}{\out{</div>}}
 }
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-coordinates"></a>}}
+\if{latex}{\out{\hypertarget{method-coordinates}{}}}
 \subsection{Method \code{coordinates()}}{
 Return the coordinates of the task
 \subsection{Usage}{
@@ -129,6 +131,7 @@ Return the coordinates of the task
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-print"></a>}}
+\if{latex}{\out{\hypertarget{method-print}{}}}
 \subsection{Method \code{print()}}{
 Print the task.
 \subsection{Usage}{
@@ -145,6 +148,7 @@ Print the task.
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

@@ -1,47 +1,52 @@
-#' @title Spatial Buffer Cross Validation Resampling
+#' @title (blockCV) Spatial buffering resampling
 #'
-#' @import mlr3
-#'
-#' @description Spatial Buffer Cross validation implemented by the `blockCV`
-#' package.
+#' @template rox_spcv_buffer
 #'
 #' @references
-#' \cite{mlr3spatiotempcv}{valavi2018}
+#' `r format_bib("valavi2018")`
 #'
 #' @export
 #' @examples
-#' library(mlr3)
-#' task = tsk("ecuador")
+#' if (mlr3misc::require_namespaces(c("sf", "blockCV"), quietly = TRUE)) {
+#'   library(mlr3)
+#'   task = tsk("ecuador")
 #'
-#' # Instantiate Resampling
-#' rcv = rsmp("spcv-buffer", range = 1000)
-#' rcv$instantiate(task)
+#'   # Instantiate Resampling
+#'   rcv = rsmp("spcv_buffer", theRange = 10000)
+#'   rcv$instantiate(task)
 #'
-#' # Individual sets:
-#' rcv$train_set(1)
-#' rcv$test_set(1)
-#' intersect(rcv$train_set(1), rcv$test_set(1))
+#'   # Individual sets:
+#'   rcv$train_set(1)
+#'   rcv$test_set(1)
+#'   intersect(rcv$train_set(1), rcv$test_set(1))
 #'
-#' # Internal storage:
-#' rcv$instance
+#'   # Internal storage:
+#'   # rcv$instance
+#' }
 ResamplingSpCVBuffer = R6Class("ResamplingSpCVBuffer",
   inherit = mlr3::Resampling,
 
   public = list(
     #' @description
     #' Create an "Environmental Block" resampling instance.
+    #'
+    #' For a list of available arguments, please see
+    #' [blockCV::buffering()].
     #' @param id `character(1)`\cr
     #'   Identifier for the resampling strategy.
-    initialize = function(id = "spcv-buffer") {
+    initialize = function(id = "spcv_buffer") {
       ps = ParamSet$new(params = list(
-        ParamInt$new("range", lower = 1L, tags = "required")
+        ParamInt$new("theRange", lower = 1L, tags = "required"),
+        ParamFct$new("spDataType", default = "PA", levels = c("PA", "PB")),
+        ParamLgl$new("addBG", default = TRUE)
       ))
-      ps$values = list(range = 100)
+
       super$initialize(
         id = id,
-        param_set = ps
+        param_set = ps,
+        man = "mlr3spatiotempcv::mlr_resamplings_spcv_buffer"
       )
-      require_namespaces(c("blockCV", "sf"))
+      mlr3misc::require_namespaces(c("blockCV", "sf"))
     },
 
     #' @description
@@ -50,69 +55,98 @@ ResamplingSpCVBuffer = R6Class("ResamplingSpCVBuffer",
     #'  A task to instantiate.
     instantiate = function(task) {
 
-      assert_task(task)
-
+      mlr3::assert_task(task)
+      checkmate::assert_multi_class(task, c("TaskClassifST", "TaskRegrST"))
       groups = task$groups
-
 
       if (!is.null(groups)) {
         stopf("Grouping is not supported for spatial resampling methods")
       }
 
-      instance = private$.sample(task$row_ids, task$coordinates(), task$crs)
+      instance = private$.sample(
+        task$row_ids,
+        task$data()[[task$target_names]],
+        task$coordinates(),
+        task$extra_args$positive,
+        task$extra_args$crs,
+        task$properties)
 
       self$instance = instance
       self$task_hash = task$hash
+      self$task_nrow = task$nrow
       invisible(self)
     }
   ),
-
   active = list(
     #' @field iters `integer(1)`\cr
     #'   Returns the number of resampling iterations, depending on the
     #'   values stored in the `param_set`.
     iters = function() {
-      as.integer(length(self$instance$fold))
+      as.integer(length(self$instance))
     }
   ),
-
   private = list(
-    .sample = function(ids, coords, crs) {
+    .sample = function(ids, response, coords, positive, crs, properties) {
 
-      require_namespaces(c("blockCV", "sf"))
+      mlr3misc::require_namespaces(c("blockCV", "sf"))
 
-      points = sf::st_as_sf(coords,
-        coords = c("x", "y"),
-        crs = crs)
+      pars = self$param_set$get_values()
 
-      inds = blockCV::buffering(
-        speciesData = points,
-        theRange = self$param_set$values$range,
-        progress = FALSE
+      if (!isTRUE("twoclass" %in% properties) && isTRUE(pars$spDataType == "PB")) {
+        stopf("spDataType = 'PB' should only be used with two-class response.")
+      }
+
+      if (!is.null(pars$addBG) && isTRUE(pars$spDataType == "PA")) {
+        stopf("Parameter addBG should only be used with spDataType = 'PB'.")
+      }
+
+      # Recode response to 0/1 for twoclass
+      if ("twoclass" %in% properties) {
+        response = ifelse(response == positive, 1, 0)
+        pars$species = "response"
+      }
+
+      data = sf::st_as_sf(cbind(response, coords),
+        coords = colnames(coords),
+        crs = crs
       )
 
-      inds = map(inds$folds, function(x) {
-        set = map(x, function(y) {
-          ids[y]
+      inds = invoke(blockCV::buffering,
+        speciesData = data,
+        progress = FALSE,
+        .args = pars)
+
+      # if addBG = TRUE, the test set can contain more than one element
+      if (!is.null(pars$addBG)) {
+        mlr3misc::map(inds$folds, function(x) {
+          set = mlr3misc::map(x, function(y) {
+            ids[y]
+          })
+          names(set) = c("train", "test")
+          set
         })
-        names(set) = c("train", "test")
-        set
-      })
-      test_inds = map_int(inds, function(x) as.integer(x[["test"]]))
-
-      data.table(
-        row_id = seq(1:length(test_inds)),
-        fold = test_inds,
-        key = "fold"
-      )
+      } else {
+        train_list = mlr3misc::map(inds$folds, function(x) {
+          x[[1]]
+        })
+        train_list = set_names(
+          train_list,
+          sprintf("train_fold_%s", seq_along(train_list)))
+      }
     },
-
     .get_train = function(i) {
-      self$instance[!list(i), "row_id", on = "fold"][[1L]]
+      if (!is.null(self$param_set$values$addBG)) {
+        self$instance[[i]]$train # nocov
+      } else {
+        self$instance[[i]]
+      }
     },
-
     .get_test = function(i) {
-      self$instance[list(i), "row_id", on = "fold"][[1L]]
+      if (!is.null(self$param_set$values$addBG)) {
+        self$instance[[i]]$test
+      } else {
+        i
+      }
     }
   )
 )

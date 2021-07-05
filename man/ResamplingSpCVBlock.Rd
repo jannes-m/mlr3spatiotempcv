@@ -2,32 +2,88 @@
 % Please edit documentation in R/ResamplingSpCVBlock.R
 \name{ResamplingSpCVBlock}
 \alias{ResamplingSpCVBlock}
-\title{Spatial Block Cross Validation Resampling}
+\title{(blockCV) Spatial block resampling}
 \description{
-Spatial Block Cross validation implemented by the \code{blockCV}
-package.
+This function creates spatially separated folds based on a pre-specified distance. It assigns blocks to the training and
+testing folds  \strong{randomly},  \strong{systematically} or in a  \strong{checkerboard pattern}. The distance (\code{theRange})
+should be in \strong{metres}, regardless of the unit of the reference system of
+the input data (for more information see the details section). By default,
+the function creates blocks according to the extent and shape of the study area, assuming that the user has considered the
+landscape for the given species and case study. Alternatively, blocks can solely be created based on species spatial data.
+Blocks can also be offset so the origin is not at the outer
+corner of the rasters. Instead of providing a distance, the blocks can also be created by specifying a number of rows and/or
+columns and divide the study area into vertical or horizontal bins, as presented in Wenger & Olden (2012) and Bahn & McGill (2012).
+Finally, the blocks can be specified by a user-defined spatial polygon layer.
 }
+\details{
+To keep the consistency, all the functions use \strong{metres} as their unit. In this function, when the input map
+has geographic coordinate system (decimal degrees), the block size is calculated based on deviding \code{theRange} by
+111325 (the standard distance of a degree in metres, on the Equator) to change the unit to degree. This value is optional
+and can be changed by user via \code{degMetre} argument.
+
+The \code{xOffset} and \code{yOffset} can be used to change the spatial position of the blocks. It can also be used to
+assess the sensitivity of analysis results to shifting in the blocking arrangements. These options are available when \code{theRange}
+is defined. By default the region is located in the middle of the blocks and by setting the offsets, the blocks will shift.
+
+Roberts et. al. (2017) suggest that blocks should be substantially bigger than the range of spatial
+autocorrelation (in model residual) to obtain realistic error estimates, while a buffer with the size of
+the spatial autocorrelation range would result in a good estimation of error. This is because of the so-called
+edge effect (O'Sullivan & Unwin, 2014), whereby points located on the edges of the blocks of opposite sets are
+not separated spatially. Blocking with a buffering strategy overcomes this issue (see \code{\link[blockCV]{buffering}}).
+}
+\section{{mlr3spatiotempcv} notes}{
+
+
+By default \code{\link[blockCV:spatialBlock]{blockCV::spatialBlock()}} does not allow the creation of multiple
+repetitions. \code{mlr3spatiotempcv} adds support for this when using the \code{range}
+argument for fold creation. When supplying a vector of \code{length(repeats)} for
+argument \code{range}, these different settings will be used to create folds which
+differ among the repetitions.
+
+Multiple repetitions are not possible when using the "row & cols" approach
+because the created folds will always be the same.
+
+The 'Description' and 'Details' fields are inherited from the respective
+upstream function.
+
+For a list of available arguments, please see \link[blockCV:spatialBlock]{blockCV::spatialBlock}.
+}
+
 \examples{
-library(mlr3)
-task = tsk("ecuador")
+if (mlr3misc::require_namespaces(c("sf", "blockCV"), quietly = TRUE)) {
+  library(mlr3)
+  task = tsk("ecuador")
 
-# Instantiate Resampling
-rcv = rsmp("spcv-block", range = 1000)
-rcv$instantiate(task)
+  # Instantiate Resampling
+  rcv = rsmp("spcv_block", range = 1000L)
+  rcv$instantiate(task)
 
-# Individual sets:
-rcv$train_set(1)
-rcv$test_set(1)
-intersect(rcv$train_set(1), rcv$test_set(1))
+  # Individual sets:
+  rcv$train_set(1)
+  rcv$test_set(1)
+  intersect(rcv$train_set(1), rcv$test_set(1))
 
-# Internal storage:
-rcv$instance
+  # Internal storage:
+  rcv$instance
+}
 }
 \references{
-\cite{mlr3spatiotempcv}{valavi2018}
+Valavi R, Elith J, Lahoz-Monfort JJ, Guillera-Arroita G (2018).
+\dQuote{blockCV: an R package for generating spatially or environmentally separated folds for k-fold cross-validation of species distribution models.}
+\emph{bioRxiv}.
+\doi{10.1101/357798}.
 }
 \section{Super class}{
 \code{\link[mlr3:Resampling]{mlr3::Resampling}} -> \code{ResamplingSpCVBlock}
+}
+\section{Public fields}{
+\if{html}{\out{<div class="r6-fields">}}
+\describe{
+\item{\code{blocks}}{\verb{sf | list of sf objects}\cr
+Polygons (\code{sf} objects) as returned by \pkg{blockCV} which grouped
+observations into partitions.}
+}
+\if{html}{\out{</div>}}
 }
 \section{Active bindings}{
 \if{html}{\out{<div class="r6-active-bindings">}}
@@ -50,6 +106,7 @@ values stored in the \code{param_set}.}
 \out{<details open ><summary>Inherited methods</summary>}
 \itemize{
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Resampling" data-id="format">}\href{../../mlr3/html/Resampling.html#method-format}{\code{mlr3::Resampling$format()}}\out{</span>}
+\item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Resampling" data-id="help">}\href{../../mlr3/html/Resampling.html#method-help}{\code{mlr3::Resampling$help()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Resampling" data-id="print">}\href{../../mlr3/html/Resampling.html#method-print}{\code{mlr3::Resampling$print()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Resampling" data-id="test_set">}\href{../../mlr3/html/Resampling.html#method-test_set}{\code{mlr3::Resampling$test_set()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Resampling" data-id="train_set">}\href{../../mlr3/html/Resampling.html#method-train_set}{\code{mlr3::Resampling$train_set()}}\out{</span>}
@@ -58,10 +115,14 @@ values stored in the \code{param_set}.}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-new"></a>}}
+\if{latex}{\out{\hypertarget{method-new}{}}}
 \subsection{Method \code{new()}}{
-Create an "Environmental Block" resampling instance.
+Create an "spatial block" resampling instance.
+
+For a list of available arguments, please see
+\code{\link[blockCV:spatialBlock]{blockCV::spatialBlock()}}.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ResamplingSpCVBlock$new(id = "spcv-block")}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{ResamplingSpCVBlock$new(id = "spcv_block")}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -75,6 +136,7 @@ Identifier for the resampling strategy.}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-instantiate"></a>}}
+\if{latex}{\out{\hypertarget{method-instantiate}{}}}
 \subsection{Method \code{instantiate()}}{
 Materializes fixed training and test splits for a given task.
 \subsection{Usage}{
@@ -92,6 +154,7 @@ A task to instantiate.}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

@@ -1,12 +1,9 @@
-#' @title Spatial Cross Validation Resampling
+#' @title (sperrorest) Coordinate-based k-means clustering
 #'
-#' @import mlr3
-#'
-#' @description Spatial Cross validation following the "k-means" approach after
-#' Brenning 2012.
+#' @template rox_spcv_coords
 #'
 #' @references
-#' \cite{mlr3spatiotempcv}{brenning2012}
+#' `r format_bib("brenning2012")`
 #'
 #' @export
 #' @examples
@@ -14,7 +11,7 @@
 #' task = tsk("ecuador")
 #'
 #' # Instantiate Resampling
-#' rcv = rsmp("spcv-coords", folds = 5)
+#' rcv = rsmp("spcv_coords", folds = 5)
 #' rcv$instantiate(task)
 #'
 #' # Individual sets:
@@ -30,17 +27,20 @@ ResamplingSpCVCoords = R6Class("ResamplingSpCVCoords",
 
   public = list(
     #' @description
-    #' Create an "Environmental Block" resampling instance.
+    #' Create an "coordinate-based" repeated resampling instance.
+    #'
+    #' For a list of available arguments, please see [sperrorest::partition_cv].
     #' @param id `character(1)`\cr
     #'   Identifier for the resampling strategy.
-    initialize = function(id = "spcv-coords") {
+    initialize = function(id = "spcv_coords") {
       ps = ParamSet$new(params = list(
         ParamInt$new("folds", lower = 1L, default = 10L, tags = "required")
       ))
       ps$values = list(folds = 10L)
       super$initialize(
         id = id,
-        param_set = ps
+        param_set = ps,
+        man = "mlr3spatiotempcv::mlr_resamplings_spcv_coords"
       )
     },
 
@@ -50,7 +50,8 @@ ResamplingSpCVCoords = R6Class("ResamplingSpCVCoords",
     #'  A task to instantiate.
     instantiate = function(task) {
 
-      assert_task(task)
+      mlr3::assert_task(task)
+      checkmate::assert_multi_class(task, c("TaskClassifST", "TaskRegrST"))
       groups = task$groups
 
 
@@ -62,10 +63,10 @@ ResamplingSpCVCoords = R6Class("ResamplingSpCVCoords",
 
       self$instance = instance
       self$task_hash = task$hash
+      self$task_nrow = task$nrow
       invisible(self)
     }
   ),
-
   active = list(
     #' @field iters `integer(1)`\cr
     #'   Returns the number of resampling iterations, depending on the
@@ -74,7 +75,6 @@ ResamplingSpCVCoords = R6Class("ResamplingSpCVCoords",
       self$param_set$values$folds
     }
   ),
-
   private = list(
     .sample = function(ids, coords) {
       inds = kmeans(coords, centers = self$param_set$values$folds)
@@ -91,7 +91,6 @@ ResamplingSpCVCoords = R6Class("ResamplingSpCVCoords",
     .get_train = function(i) {
       self$instance[!list(i), "row_id", on = "fold"][[1L]]
     },
-
     .get_test = function(i) {
       self$instance[list(i), "row_id", on = "fold"][[1L]]
     }

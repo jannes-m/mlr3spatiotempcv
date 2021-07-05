@@ -2,31 +2,62 @@
 % Please edit documentation in R/ResamplingSpCVEnv.R
 \name{ResamplingSpCVEnv}
 \alias{ResamplingSpCVEnv}
-\title{Environmental Block Cross Validation Resampling}
+\title{(blockCV) "Environmental blocking" resampling}
 \description{
-Environmental Block Cross Validation. This strategy uses k-means clustering
-to specify blocks of similar environmental conditions. Only numeric features
-can be used. The \code{features} used for building blocks can be specified in the
-\code{param_set}. By default, all numeric features are used.
+Environmental blocking for cross-validation. This function uses clustering methods to specify sets of similar environmental
+conditions based on the input covariates. Species data corresponding to any of these groups or clusters are assigned to a
+fold. This function does the clustering in raster space and species data. Clustering is done using \code{\link[stats]{kmeans}}
+for both approaches. This function works on single or
+multiple raster files; multiple rasters need to be in a raster brick or stack format.
 }
+\details{
+As k-means algorithms use Euclidean distance to estimate clusters, the input covariates should be quantitative variables. Since
+variables with wider ranges of values might dominate the clusters and bias the environmental clustering (Hastie et al., 2009),
+all the input rasters are first standardized within the function. This is done either by normalizing based on subtracting the
+mean and dividing by the standard deviation of each raster (the default) or optionally by standardizing using linear scaling
+to constrain all raster values between 0 and 1.
+
+By default, the clustering is done in the raster space. In this approach the clusters will be consistent throughout the region
+and across species (in the same region). However, this may result in a cluster(s) that covers none of the species records (the spatial location of response samples),
+espcially when species data is not dispersed throughout the region or the number of clusters (k or folds) is high. In this
+case, the number of folds is less than specified \code{k}. If \code{rasterBlock = FALSE}, the clustering will be done in
+species points and the number of the folds will be the same as \code{k}.
+
+Note that the input raster layer should cover all the species points, otherwise an error will rise. The records with no raster
+value should be deleted prior to the analysis or another raster layer would be provided.
+}
+\section{{mlr3spatiotempcv} notes}{
+
+
+The 'Description' and 'Details' fields are inherited from the respective
+upstream function.
+
+For a list of available arguments, please see \link[blockCV:envBlock]{blockCV::envBlock}.
+}
+
 \examples{
-library(mlr3)
-task = tsk("ecuador")
+if (mlr3misc::require_namespaces(c("sf", "blockCV"), quietly = TRUE)) {
+  library(mlr3)
+  task = tsk("ecuador")
 
-# Instantiate Resampling
-rcv = rsmp("spcv-env", folds = 4)
-rcv$instantiate(task)
+  # Instantiate Resampling
+  rcv = rsmp("spcv_env", folds = 4)
+  rcv$instantiate(task)
 
-# Individual sets:
-rcv$train_set(1)
-rcv$test_set(1)
-intersect(rcv$train_set(1), rcv$test_set(1))
+  # Individual sets:
+  rcv$train_set(1)
+  rcv$test_set(1)
+  intersect(rcv$train_set(1), rcv$test_set(1))
 
-# Internal storage:
-rcv$instance
+  # Internal storage:
+  rcv$instance
+}
 }
 \references{
-\cite{mlr3spatiotempcv}{valavi2018}
+Valavi R, Elith J, Lahoz-Monfort JJ, Guillera-Arroita G (2018).
+\dQuote{blockCV: an R package for generating spatially or environmentally separated folds for k-fold cross-validation of species distribution models.}
+\emph{bioRxiv}.
+\doi{10.1101/357798}.
 }
 \section{Super class}{
 \code{\link[mlr3:Resampling]{mlr3::Resampling}} -> \code{ResamplingSpCVEnv}
@@ -52,6 +83,7 @@ values stored in the \code{param_set}.}
 \out{<details open ><summary>Inherited methods</summary>}
 \itemize{
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Resampling" data-id="format">}\href{../../mlr3/html/Resampling.html#method-format}{\code{mlr3::Resampling$format()}}\out{</span>}
+\item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Resampling" data-id="help">}\href{../../mlr3/html/Resampling.html#method-help}{\code{mlr3::Resampling$help()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Resampling" data-id="print">}\href{../../mlr3/html/Resampling.html#method-print}{\code{mlr3::Resampling$print()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Resampling" data-id="test_set">}\href{../../mlr3/html/Resampling.html#method-test_set}{\code{mlr3::Resampling$test_set()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Resampling" data-id="train_set">}\href{../../mlr3/html/Resampling.html#method-train_set}{\code{mlr3::Resampling$train_set()}}\out{</span>}
@@ -60,10 +92,13 @@ values stored in the \code{param_set}.}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-new"></a>}}
+\if{latex}{\out{\hypertarget{method-new}{}}}
 \subsection{Method \code{new()}}{
 Create an "Environmental Block" resampling instance.
+
+For a list of available arguments, please see \link[blockCV:envBlock]{blockCV::envBlock}.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ResamplingSpCVEnv$new(id = "spcv-env")}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{ResamplingSpCVEnv$new(id = "spcv_env")}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -77,6 +112,7 @@ Identifier for the resampling strategy.}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-instantiate"></a>}}
+\if{latex}{\out{\hypertarget{method-instantiate}{}}}
 \subsection{Method \code{instantiate()}}{
 Materializes fixed training and test splits for a given task.
 \subsection{Usage}{
@@ -94,6 +130,7 @@ A task to instantiate.}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

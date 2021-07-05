@@ -1,12 +1,9 @@
-#' @title Repeated Spatial Cross Validation Resampling
+#' @title (sperrorest) Repeated coordinate-based k-means clustering
 #'
-#' @import mlr3
-#'
-#' @description Spatial Cross validation following the "k-means" approach after
-#' Brenning 2012.
+#' @template rox_spcv_coords
 #'
 #' @references
-#' \cite{mlr3spatiotempcv}{brenning2012}
+#' `r format_bib("brenning2012")`
 #'
 #' @export
 #' @examples
@@ -14,7 +11,7 @@
 #' task = tsk("diplodia")
 #'
 #' # Instantiate Resampling
-#' rrcv = rsmp("repeated-spcv-coords", folds = 3, repeats = 5)
+#' rrcv = rsmp("repeated_spcv_coords", folds = 3, repeats = 5)
 #' rrcv$instantiate(task)
 #'
 #' # Individual sets:
@@ -31,13 +28,14 @@
 #' rrcv$instance # table
 ResamplingRepeatedSpCVCoords = R6Class("ResamplingRepeatedSpCVCoords",
   inherit = mlr3::Resampling,
-
   public = list(
     #' @description
     #' Create an "coordinate-based" repeated resampling instance.
+    #'
+    #' For a list of available arguments, please see [sperrorest::partition_cv].
     #' @param id `character(1)`\cr
     #'   Identifier for the resampling strategy.
-    initialize = function(id = "repeated-spcv-coords") {
+    initialize = function(id = "repeated_spcv_coords") {
       ps = ParamSet$new(params = list(
         ParamInt$new("folds", lower = 1L, default = 10L, tags = "required"),
         ParamInt$new("repeats", lower = 1, default = 1L, tags = "required")
@@ -46,9 +44,8 @@ ResamplingRepeatedSpCVCoords = R6Class("ResamplingRepeatedSpCVCoords",
       super$initialize(
         id = id,
         param_set = ps,
-        man = "mlr3spatiotempcv::mlr_resamplings_repeated_spcvcoords"
+        man = "mlr3spatiotempcv::mlr_resamplings_repeated_spcv_coords"
       )
-
     },
 
     #' @description Translates iteration numbers to fold number.
@@ -56,7 +53,7 @@ ResamplingRepeatedSpCVCoords = R6Class("ResamplingRepeatedSpCVCoords",
     #'   Iteration number.
     folds = function(iters) {
       iters = assert_integerish(iters, any.missing = FALSE, coerce = TRUE)
-      ((iters - 1L) %% as.integer(self$param_set$values$repeats)) + 1L
+      ((iters - 1L) %% as.integer(self$param_set$values$folds)) + 1L
     },
 
     #' @description Translates iteration numbers to repetition number.
@@ -73,20 +70,21 @@ ResamplingRepeatedSpCVCoords = R6Class("ResamplingRepeatedSpCVCoords",
     #'  A task to instantiate.
     instantiate = function(task) {
 
-      assert_task(task)
+      mlr3::assert_task(task)
+      checkmate::assert_multi_class(task, c("TaskClassifST", "TaskRegrST"))
       groups = task$groups
       if (!is.null(groups)) {
-        stopf("Grouping is not supported for spatial resampling methods.")
+        stopf("Grouping is not supported for spatial resampling methods.") # nocov
       }
 
       instance = private$.sample(task$row_ids, task$coordinates())
 
       self$instance = instance
       self$task_hash = task$hash
+      self$task_nrow = task$nrow
       invisible(self)
     }
   ),
-
   active = list(
 
     #' @field iters `integer(1)`\cr
@@ -97,19 +95,18 @@ ResamplingRepeatedSpCVCoords = R6Class("ResamplingRepeatedSpCVCoords",
       as.integer(pv$repeats) * as.integer(pv$folds)
     }
   ),
-
   private = list(
     .sample = function(ids, coords) {
       pv = self$param_set$values
       folds = as.integer(pv$folds)
 
-      map_dtr(seq_len(pv$repeats), function(i) {
-        data.table(row_id = ids, rep = i,
+      mlr3misc::map_dtr(seq_len(pv$repeats), function(i) {
+        data.table(
+          row_id = ids, rep = i,
           fold = kmeans(coords, centers = folds)$cluster
         )
       })
     },
-
     .get_train = function(i) {
       i = as.integer(i) - 1L
       folds = as.integer(self$param_set$values$folds)
@@ -118,7 +115,6 @@ ResamplingRepeatedSpCVCoords = R6Class("ResamplingRepeatedSpCVCoords",
       ii = data.table(rep = rep, fold = seq_len(folds)[-fold])
       self$instance[ii, "row_id", on = names(ii), nomatch = 0L][[1L]]
     },
-
     .get_test = function(i) {
       i = as.integer(i) - 1L
       folds = as.integer(self$param_set$values$folds)

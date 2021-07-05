@@ -1,43 +1,42 @@
-#' @title Repeated Environmental Block Cross Validation Resampling
+#' @title (blockCV) Repeated "environmental blocking" resampling
 #'
-#' @import mlr3
-#'
-#' @description Environmental Block Cross Validation. This strategy uses k-means
-#'   clustering to specify blocks of similar environmental conditions. Only
-#'   numeric features can be used. The `features` used for building blocks can
-#'   be specified in the `param_set`. By default, all numeric features are used.
+#' @template rox_spcv_env
 #'
 #' @references
-#' \cite{mlr3spatiotempcv}{valavi2018}
+#' `r format_bib("valavi2018")`
 #'
 #' @export
 #' @examples
-#' library(mlr3)
-#' task = tsk("ecuador")
+#' if (mlr3misc::require_namespaces(c("sf", "blockCV"), quietly = TRUE)) {
+#'   library(mlr3)
+#'   task = tsk("ecuador")
 #'
-#' # Instantiate Resampling
-#' rrcv = rsmp("repeated-spcv-env", folds = 4, repeats = 2)
-#' rrcv$instantiate(task)
+#'   # Instantiate Resampling
+#'   rrcv = rsmp("repeated_spcv_env", folds = 4, repeats = 2)
+#'   rrcv$instantiate(task)
 #'
-#' # Individual sets:
-#' rrcv$train_set(1)
-#' rrcv$test_set(1)
-#' intersect(rrcv$train_set(1), rrcv$test_set(1))
+#'   # Individual sets:
+#'   rrcv$train_set(1)
+#'   rrcv$test_set(1)
+#'   intersect(rrcv$train_set(1), rrcv$test_set(1))
 #'
-#' # Internal storage:
-#' rrcv$instance
+#'   # Internal storage:
+#'   rrcv$instance
+#' }
 ResamplingRepeatedSpCVEnv = R6Class("ResamplingRepeatedSpCVEnv",
   inherit = mlr3::Resampling,
-
   public = list(
     #' @description
-    #' Create an "coordinate-based" repeated resampling instance.
+    #' Create an "Environmental Block" repeated resampling instance.
+    #'
+    #' For a list of available arguments, please see [blockCV::envBlock].
     #' @param id `character(1)`\cr
     #'   Identifier for the resampling strategy.
-    initialize = function(id = "repeated-spcv-env") {
+    initialize = function(id = "repeated_spcv_env") {
       ps = ParamSet$new(params = list(
         ParamInt$new("folds", lower = 1L, default = 10L, tags = "required"),
-        ParamInt$new("repeats", lower = 1, default = 10L, tags = "required")
+        ParamInt$new("repeats", lower = 1, default = 10L, tags = "required"),
+        ParamUty$new("features")
       ))
       ps$values = list(folds = 10L, repeats = 1)
       super$initialize(
@@ -52,7 +51,7 @@ ResamplingRepeatedSpCVEnv = R6Class("ResamplingRepeatedSpCVEnv",
     #'   Iteration number.
     folds = function(iters) {
       iters = assert_integerish(iters, any.missing = FALSE, coerce = TRUE)
-      ((iters - 1L) %% as.integer(self$param_set$values$repeats)) + 1L
+      ((iters - 1L) %% as.integer(self$param_set$values$folds)) + 1L
     },
 
     #' @description Translates iteration numbers to repetition number.
@@ -69,16 +68,11 @@ ResamplingRepeatedSpCVEnv = R6Class("ResamplingRepeatedSpCVEnv",
     #'  A task to instantiate.
     instantiate = function(task) {
 
-      assert_task(task)
+      mlr3::assert_task(task)
+      checkmate::assert_multi_class(task, c("TaskClassifST", "TaskRegrST"))
       pv = self$param_set$values
 
       # Set values to default if missing
-      if (is.null(pv$rows)) {
-        pv$rows = self$param_set$default[["rows"]]
-      }
-      if (is.null(pv$cols)) {
-        pv$cols = self$param_set$default[["cols"]]
-      }
       if (is.null(pv$features)) {
         pv$features = task$feature_names
       }
@@ -90,9 +84,8 @@ ResamplingRepeatedSpCVEnv = R6Class("ResamplingRepeatedSpCVEnv",
       # Check for selected features that are not in task
       diff = setdiff(pv$features, columns[, id])
       if (length(diff) > 0) {
-        stopf("'spcv-env' requires numeric features for clustering.
-              Feature '%s' is either non-numeric or does not exist in the data.",
-          diff, wrap = TRUE)
+        warningf("Feature '%s' is either non-numeric or does not exist in data.")
+        stopf("Method 'spcv_env' requires numeric features for clustering.")
       }
       columns = columns[id %in% pv$features]
       columns = columns[, id]
@@ -103,10 +96,10 @@ ResamplingRepeatedSpCVEnv = R6Class("ResamplingRepeatedSpCVEnv",
 
       self$instance = instance
       self$task_hash = task$hash
+      self$task_nrow = task$nrow
       invisible(self)
     }
   ),
-
   active = list(
 
     #' @field iters `integer(1)`\cr
@@ -117,19 +110,18 @@ ResamplingRepeatedSpCVEnv = R6Class("ResamplingRepeatedSpCVEnv",
       as.integer(pv$repeats) * as.integer(pv$folds)
     }
   ),
-
   private = list(
-    .sample = function(ids, coords) {
+    .sample = function(ids, data) {
       pv = self$param_set$values
       folds = as.integer(pv$folds)
 
-      map_dtr(seq_len(pv$repeats), function(i) {
-        data.table(row_id = ids, rep = i,
-          fold = kmeans(coords, centers = folds)$cluster
+      mlr3misc::map_dtr(seq_len(pv$repeats), function(i) {
+        data.table(
+          row_id = ids, rep = i,
+          fold = kmeans(data, centers = folds)$cluster
         )
       })
     },
-
     .get_train = function(i) {
       i = as.integer(i) - 1L
       folds = as.integer(self$param_set$values$folds)
@@ -138,7 +130,6 @@ ResamplingRepeatedSpCVEnv = R6Class("ResamplingRepeatedSpCVEnv",
       ii = data.table(rep = rep, fold = seq_len(folds)[-fold])
       self$instance[ii, "row_id", on = names(ii), nomatch = 0L][[1L]]
     },
-
     .get_test = function(i) {
       i = as.integer(i) - 1L
       folds = as.integer(self$param_set$values$folds)

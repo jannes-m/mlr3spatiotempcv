@@ -2,17 +2,31 @@
 % Please edit documentation in R/ResamplingSpCVCoords.R
 \name{ResamplingSpCVCoords}
 \alias{ResamplingSpCVCoords}
-\title{Spatial Cross Validation Resampling}
+\title{(sperrorest) Coordinate-based k-means clustering}
 \description{
-Spatial Cross validation following the "k-means" approach after
-Brenning 2012.
+\code{partition_cv} creates a \link[sperrorest]{represampling} object for
+\code{length(repetition)}-repeated \code{nfold}-fold cross-validation.
 }
+\details{
+This function does not actually perform a cross-validation or
+partition the data set itself; it simply creates a data structure
+containing the indices of training and test samples.
+}
+\section{{mlr3spatiotempcv} notes}{
+
+
+The 'Description' and 'Details' fields are inherited from the respective
+upstream function.
+
+For a list of available arguments, please see \link[sperrorest:partition_cv]{sperrorest::partition_cv}.
+}
+
 \examples{
 library(mlr3)
 task = tsk("ecuador")
 
 # Instantiate Resampling
-rcv = rsmp("spcv-coords", folds = 5)
+rcv = rsmp("spcv_coords", folds = 5)
 rcv$instantiate(task)
 
 # Individual sets:
@@ -25,7 +39,10 @@ intersect(rcv$train_set(1), rcv$test_set(1)) # good!
 rcv$instance # table
 }
 \references{
-\cite{mlr3spatiotempcv}{brenning2012}
+Brenning A (2012).
+\dQuote{Spatial cross-validation and bootstrap for the assessment of prediction rules in remote sensing: The R package sperrorest.}
+In \emph{2012 IEEE International Geoscience and Remote Sensing Symposium}.
+\doi{10.1109/igarss.2012.6352393}.
 }
 \section{Super class}{
 \code{\link[mlr3:Resampling]{mlr3::Resampling}} -> \code{ResamplingSpCVCoords}
@@ -51,6 +68,7 @@ values stored in the \code{param_set}.}
 \out{<details open ><summary>Inherited methods</summary>}
 \itemize{
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Resampling" data-id="format">}\href{../../mlr3/html/Resampling.html#method-format}{\code{mlr3::Resampling$format()}}\out{</span>}
+\item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Resampling" data-id="help">}\href{../../mlr3/html/Resampling.html#method-help}{\code{mlr3::Resampling$help()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Resampling" data-id="print">}\href{../../mlr3/html/Resampling.html#method-print}{\code{mlr3::Resampling$print()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Resampling" data-id="test_set">}\href{../../mlr3/html/Resampling.html#method-test_set}{\code{mlr3::Resampling$test_set()}}\out{</span>}
 \item \out{<span class="pkg-link" data-pkg="mlr3" data-topic="Resampling" data-id="train_set">}\href{../../mlr3/html/Resampling.html#method-train_set}{\code{mlr3::Resampling$train_set()}}\out{</span>}
@@ -59,10 +77,13 @@ values stored in the \code{param_set}.}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-new"></a>}}
+\if{latex}{\out{\hypertarget{method-new}{}}}
 \subsection{Method \code{new()}}{
-Create an "Environmental Block" resampling instance.
+Create an "coordinate-based" repeated resampling instance.
+
+For a list of available arguments, please see \link[sperrorest:partition_cv]{sperrorest::partition_cv}.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ResamplingSpCVCoords$new(id = "spcv-coords")}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{ResamplingSpCVCoords$new(id = "spcv_coords")}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -76,6 +97,7 @@ Identifier for the resampling strategy.}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-instantiate"></a>}}
+\if{latex}{\out{\hypertarget{method-instantiate}{}}}
 \subsection{Method \code{instantiate()}}{
 Materializes fixed training and test splits for a given task.
 \subsection{Usage}{
@@ -93,6 +115,7 @@ A task to instantiate.}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-clone"></a>}}
+\if{latex}{\out{\hypertarget{method-clone}{}}}
 \subsection{Method \code{clone()}}{
 The objects of this class are cloneable with this method.
 \subsection{Usage}{

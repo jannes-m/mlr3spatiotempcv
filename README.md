@@ -1,116 +1,58 @@
-
 # mlr3spatiotempcv
 
-Spatio-temporal resampling methods for mlr3.
+Package website: [release](https://mlr3spatiotempcv.mlr-org.com/) \| [dev](https://mlr3spatiotempcv.mlr-org.com/dev/)
+
+Spatiotemporal resampling methods for mlr3.
 
 <!-- badges: start -->
 
-[![Build
-Status](https://img.shields.io/travis/mlr-org/mlr3spatiotempcv/master?label=macOS&logo=travis&style=flat-square)](https://travis-ci.org/mlr-org/mlr3spatiotempcv)
-[![CircleCI build
-status](https://circleci.com/gh/mlr-org/mlr3spatiotempcv.svg?style=svg)](https://circleci.com/gh/mlr-org/mlr3spatiotempcv)
-[![CRAN Status
-Badge](https://www.r-pkg.org/badges/version-ago/mlr3spatiotempcv)](https://cran.r-project.org/package=mlr3spatiotempcv)
-[![Lifecycle:
-maturing](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://www.tidyverse.org/lifecycle/#maturing)
-[![Coverage
-status](https://codecov.io/gh/mlr-org/mlr3spatiotempcv/branch/master/graph/badge.svg)](https://codecov.io/github/mlr-org/mlr3spatiotempcv?branch=master)
+[![tic](https://github.com/mlr-org/mlr3spatiotempcv/workflows/tic/badge.svg?branch=main)](https://github.com/mlr-org/mlr3spatiotempcv/actions) [![CRAN Status](https://www.r-pkg.org/badges/version-ago/mlr3spatiotempcv)](https://cran.r-project.org/package=mlr3spatiotempcv) [![Coverage status](https://codecov.io/gh/mlr-org/mlr3spatiotempcv/branch/main/graph/badge.svg)](https://codecov.io/github/mlr-org/mlr3spatiotempcv?branch=main) [![Lifecycle: maturing](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://lifecycle.r-lib.org/articles/stages.html) [![CodeFactor](https://www.codefactor.io/repository/github/mlr-org/mlr3spatiotempcv/badge)](https://www.codefactor.io/repository/github/mlr-org/mlr3spatiotempcv)
+
 <!-- badges: end -->
 
-This package extends the [mlr3](https://github.com/mlr-org/mlr3) package
-framework by spatiotemporal resampling and visualization methods.
+This package extends the [mlr3](https://github.com/mlr-org/mlr3) package framework with spatiotemporal resampling and visualization methods.
 
-## Resampling methods
+If you prefer the [tidymodels](https://www.tidymodels.org/) ecosystem, have a look at the [{spatialsample}](https://spatialsample.tidymodels.org/index.html) package for spatial sampling methods.
 
-Currently, the following ones are implemented:
+# Installation
 
-| Literature                | Package    | Reference     | mlr3 Sugar                     |
-| ------------------------- | ---------- | ------------- | ------------------------------ |
-| Spatial Buffering         | blockCV    | Valavi 2019   | `rsmp("spcv-buffer")`          |
-| Spatial Blocking          | blockCV    | Valavi 2019   | `rsmp("spcv-block")`           |
-| Spatial CV                | sperrorest | Brenning 2012 | `rsmp("spcv-coords")`          |
-| Environmental Blocking    | blockCV    | Valavi 2019   | `rsmp("spcv-env")`             |
-| —                         | —          | —             | —                              |
-| Repeated Spatial Blocking | blockCV    | Valavi 2019   | `rsmp("repeated-spcv-block")`  |
-| Repeated Spatial CV       | sperrorest | Brenning 2012 | `rsmp("repeated-spcv-coords")` |
-| Repeated Env Blocking     | blockCV    | Valavi 2019   | `rsmp("repeated-spcv-env")`    |
-
-## Spatial tasks
-
-| Name     | Code              | Type    |
-| -------- | ----------------- | ------- |
-| ecuador  | `tsk("ecuador")`  | Classif |
-| diplodia | `tsk("diplodia")` | Classif |
-
-## Visualization
-
-Generic S3 function `autoplot()` for all implemented spatial resampling
-methods.
-
-### Visualization of all partitions
+CRAN version
 
 ``` r
-library(mlr3)
-library(mlr3spatiotempcv)
-library(ggplot2)
-
-task = tsk("ecuador")
-resampling = rsmp("spcv-coords", folds = 5)
-resampling$instantiate(task)
-
-autoplot(resampling, task)
+install.packages("mlr3spatiotempcv")
 ```
 
-![](man/figures/README-spcv-coords-all-partitions-1.png)<!-- -->
-
-### Visualization of the first fold only
+Development version
 
 ``` r
-autoplot(resampling, task, fold_id = 1)
+remotes::install_github("mlr-org/mlr3spatiotempcv")
+
+# R Universe Repo
+install.packages('mlr3spatiotempcv', mlrorg = 'https://mlr-org.r-universe.dev')
 ```
 
-![](man/figures/README-spcv-coords-fold-1.png)<!-- -->
+# Get Started
 
-## More resources
+See the ["Get Started"](https://mlr3spatiotempcv.mlr-org.com/articles/mlr3spatiotempcv.html) vignette for a quick introduction.
 
-For detailed information on how to use spatial resampling in {mlr3}
-please read the section about [spatial analysis in the mlr3
-book](https://mlr3book.mlr-org.com/spatial.html) and consult the
-[Getting
-Started](https://mlr3spatiotempcv.mlr-org.com/articles/mlr3spatiotempcv.html)
-vignette.
+For more detailed information including an usage example see the ["Spatiotemporal Analysis"](https://mlr3book.mlr-org.com/spatiotemporal.html) chapter in the mlr3book.
 
-# References
+Article ["Spatiotemporal Visualization"](https://mlr3spatiotempcv.mlr-org.com/articles/spatiotemp-viz.html) shows how 3D subplots grids can be created.
 
-<div id="refs" class="references hanging-indent">
+# Citation
 
-<div id="ref-brenning2012">
+To cite the package in publications, use the output of `citation("mlr3spatiotempcv")`.
 
-Brenning, Alexander. 2012. “Spatial cross-validation and bootstrap for
-the assessment of prediction rules in remote sensing: The R package
-sperrorest.” In *2012 IEEE International Geoscience and Remote Sensing
-Symposium*. IEEE. <https://doi.org/10.1109/igarss.2012.6352393>.
+# Other spatiotemporal resampling packages
 
-</div>
+This list does not claim to be comprehensive.
 
-<div id="ref-schratz2019">
-
-Schratz, Patrick, Jannes Muenchow, Eugenia Iturritxa, Jakob Richter, and
-Alexander Brenning. 2019. “Hyperparameter Tuning and Performance
-Assessment of Statistical and Machine-Learning Algorithms Using Spatial
-Data.” *Ecological Modelling* 406 (August): 109–20.
-<https://doi.org/10.1016/j.ecolmodel.2019.06.002>.
-
-</div>
-
-<div id="ref-valavi2018">
-
-Valavi, Roozbeh, Jane Elith, Jose J. Lahoz-Monfort, and Gurutzeta
-Guillera-Arroita. 2018. “blockCV: an R package for generating spatially
-or environmentally separated folds for k-fold cross-validation of
-species distribution models.” *bioRxiv*, June.
-<https://doi.org/10.1101/357798>.
-
-</div>
-
-</div>
+| Name          | Language | Resources                                                                                                                                                                              |
+| ------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| blockCV       | R        | [Paper](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.13107), [CRAN](https://cran.r-project.org/package=blockCV)                              |
+| CAST          | R        | [Paper](https://www.sciencedirect.com/science/article/pii/S1364815217310976), [CRAN](https://cran.r-project.org/package=CAST) |
+| ENMeval       | R        | [Paper](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.12261), [CRAN](https://cran.r-project.org/package=ENMeval)                              |
+| spatialsample | R        | [CRAN](https://cran.r-project.org/package=spatialsample)                                                                                                               |
+| sperrorest    | R        | [Paper](https://doi.org/10.1109%2Figarss.2012.6352393), [CRAN](https://cran.r-project.org/package=sperrorest)                                                          |
+| Pyspatialml   | Python   | [GitHub](https://github.com/stevenpawley/Pyspatialml)                                                                                                                                  |
+| spacv         | Python   | [GitHub](https://github.com/SamComber/spacv)                                                                                                                                           |
